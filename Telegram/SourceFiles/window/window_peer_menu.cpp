@@ -65,6 +65,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session_settings.h"
 #include "menu/menu_mute.h"
 #include "menu/menu_ttl_validator.h"
+#include "novagram/nova_autodelete.h"
+#include "novagram/nova_erase.h"
+#include "novagram/nova_read_status.h"
 #include "apiwrap.h"
 #include "mainwidget.h"
 #include "api/api_blocked_peers.h"
@@ -317,6 +320,9 @@ private:
 	void addCreatePoll();
 	void addCreateTodoList();
 	void addThemeEdit();
+	void addNovaAutoDelete();
+	void addNovaReadStatus();
+	void addNovaEraseEvidence();
 	void addToggleNoForwards();
 	void addBlockUser();
 	void addViewDiscussion();
@@ -1516,6 +1522,51 @@ void ShowDisableSharingBox(
 	}));
 }
 
+void Filler::addNovaAutoDelete() {
+	if (!_peer || _peer->isSelf()) {
+		return;
+	}
+	const auto peer = _peer;
+	if (!NovaGram::Enabled(&peer->session())) {
+		return;
+	}
+	const auto applies = NovaGram::AppliesTo(peer);
+	_addAction(NovaGram::PeerMenuText(peer), [=] {
+		// An explicit choice always wins over the automatic default, so the
+		// rule is stored instead of just flipping a flag: otherwise gaining or
+		// losing admin rights would silently change what the user picked.
+		NovaGram::SetRuleFor(
+			peer,
+			applies ? NovaGram::PeerRule::Never : NovaGram::PeerRule::Always);
+	}, (applies ? &st::menuIconCancel : &st::menuIconClear));
+}
+
+void Filler::addNovaReadStatus() {
+	if (!_peer || !NovaGram::ReadStatusHiddenFor(_peer)) {
+		return;
+	}
+	const auto peer = _peer;
+	const auto show = _controller->uiShow();
+	_addAction(NovaGram::ReadStatusTitle(), [=] {
+		show->showBox(Box([=](not_null<Ui::GenericBox*> box) {
+			NovaGram::ReadStatusBox(box, peer);
+		}));
+	}, &st::menuIconMarkRead);
+}
+
+void Filler::addNovaEraseEvidence() {
+	if (!_peer) {
+		return;
+	}
+	const auto peer = _peer;
+	const auto show = _controller->uiShow();
+	_addAction(NovaGram::EraseMenuText(), [=] {
+		show->showBox(Box([=](not_null<Ui::GenericBox*> box) {
+			NovaGram::EraseEvidenceBox(box, show, peer);
+		}));
+	}, &st::menuIconDelete);
+}
+
 void Filler::addToggleNoForwards() {
 	const auto user = _peer->asUser();
 	if (!user
@@ -1877,6 +1928,9 @@ void Filler::fillHistoryActions() {
 	addCreatePoll();
 	addCreateTodoList();
 	addThemeEdit();
+	addNovaAutoDelete();
+	addNovaReadStatus();
+	addNovaEraseEvidence();
 	addToggleNoForwards();
 	addViewDiscussion();
 	addDirectMessages();

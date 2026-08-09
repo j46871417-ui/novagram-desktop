@@ -103,6 +103,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_app_config.h"
 #include "main/main_session.h"
 #include "main/main_session_settings.h"
+#include "novagram/nova_autodelete.h"
 #include "media/audio/media_audio.h"
 #include "media/player/media_player_instance.h"
 #include "spellcheck/spellcheck_types.h"
@@ -1115,6 +1116,25 @@ void AddTopMessageActions(
 	AddPinMessageAction(menu, request, list);
 }
 
+void AddNovaAutoDeleteAction(
+		not_null<Ui::PopupMenu*> menu,
+		not_null<HistoryItem*> item) {
+	const auto text = NovaGram::CountdownText(item);
+	if (text.isEmpty()) {
+		return;
+	}
+	// Informational only: the entry states when NovaGram will remove this
+	// message, so it must not swallow a click meant for the item below it.
+	auto label = base::make_unique_q<Ui::Menu::MultilineAction>(
+		menu->menu(),
+		menu->st().menu,
+		st::historyHasCustomEmoji,
+		st::historyHasCustomEmojiPosition,
+		TextWithEntities{ text });
+	label->setAttribute(Qt::WA_TransparentForMouseEvents);
+	menu->addAction(std::move(label));
+}
+
 void AddMessageActions(
 		not_null<Ui::PopupMenu*> menu,
 		const ContextMenuRequest &request,
@@ -1135,6 +1155,7 @@ void AddMessageActions(
 	AddSelectionAction(menu, request, list);
 	if (request.item && request.selectedItems.empty()) {
 		AddEphemeralAboutAction(menu, request.item);
+		AddNovaAutoDeleteAction(menu, request.item);
 	}
 	AddRescheduleAction(menu, request, list);
 }
