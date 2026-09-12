@@ -13,6 +13,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mtproto/mtproto_proxy_data.h"
 #include "main/main_session.h"
 #include "main/main_account.h"
+#include "main/main_domain.h"
 #include "base/timer.h"
 
 #include <QtNetwork/QNetworkAccessManager>
@@ -22,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 #include <QtCore/QUrl>
+#include <QtCore/QUrlQuery>
 
 namespace NovaGram {
 namespace {
@@ -182,18 +184,12 @@ private:
 			return;
 		}
 
-		// Check if any active account is in connection-failure state
-		const auto accounts = Core::App().domain().accounts();
+		// Check if any active account is disconnected or connecting
 		auto anyConnectingTooLong = false;
-
-		for (const auto &[index, account] : accounts) {
-			if (const auto session = account->maybeSession()) {
-				// State 0 is connecting, state 1 is connected, state 2 is ready
-				// In MTProto, if connection is blocked, state hangs on Connecting / WaitingForNetwork
-				const auto state = session->mtp().connectionState();
-				if (state == MTP::ConnectedState::ConnectingToProxy
-					|| state == MTP::ConnectedState::Connecting
-					|| state == MTP::ConnectedState::WaitingForNetwork) {
+		for (const auto &entry : Core::App().domain().accounts()) {
+			const auto account = entry.account.get();
+			if (account && account->sessionExists() && !account->mtp().isTestMode()) {
+				if (account->mtp().dcstate() != MTP::ConnectedState) {
 					anyConnectingTooLong = true;
 					break;
 				}
