@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/core_settings.h"
 #include "core/core_settings_proxy.h"
 #include "mtproto/mtproto_proxy_data.h"
+#include "mtproto/facade.h"
 #include "main/main_session.h"
 #include "main/main_account.h"
 #include "main/main_domain.h"
