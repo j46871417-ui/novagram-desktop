@@ -25,7 +25,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QJsonObject>
 #include <QtCore/QUrl>
 #include <QtCore/QUrlQuery>
-#include <random>
+#include <QtCore/QRandomGenerator>
 
 namespace NovaGram {
 namespace {
@@ -153,9 +153,10 @@ private:
 		auto &proxySettings = Core::App().settings().proxy();
 		auto lines = text.split('\n', Qt::SkipEmptyParts);
 		
-		std::random_device rd;
-		std::mt19937 g(rd());
-		std::shuffle(lines.begin(), lines.end(), g);
+		for (int i = lines.size() - 1; i > 0; --i) {
+			int j = QRandomGenerator::global()->bounded(i + 1);
+			lines.swapItemsAt(i, j);
+		}
 		
 		auto added = 0;
 
