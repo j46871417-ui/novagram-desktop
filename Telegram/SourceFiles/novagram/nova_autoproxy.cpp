@@ -241,7 +241,7 @@ private:
 		}
 
 		if (proxySettings.list().size() > 1) {
-			proxySettings.removeFromList(current);
+			(void)proxySettings.removeFromList(current);
 			if (nextIndex > 0) {
 				nextIndex--;
 			}
