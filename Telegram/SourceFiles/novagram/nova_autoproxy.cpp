@@ -25,6 +25,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QJsonObject>
 #include <QtCore/QUrl>
 #include <QtCore/QUrlQuery>
+#include <random>
 
 namespace NovaGram {
 namespace {
@@ -74,7 +75,7 @@ public:
 		}
 
 		_watchdogTimer.setCallback([this] { checkConnectionWatchdog(); });
-		_watchdogTimer.callEach(4000); // check every 4 seconds
+		_watchdogTimer.callEach(5000); // check every 5 seconds
 
 		_refreshTimer.setCallback([this] { fetchCloudList(); });
 		_refreshTimer.callEach(7200 * 1000); // refresh list every 2 hours
@@ -150,7 +151,12 @@ private:
 
 	void parseAndMergeProxies(const QString &text) {
 		auto &proxySettings = Core::App().settings().proxy();
-		const auto lines = text.split('\n', Qt::SkipEmptyParts);
+		auto lines = text.split('\n', Qt::SkipEmptyParts);
+		
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(lines.begin(), lines.end(), g);
+		
 		auto added = 0;
 
 		for (const auto &rawLine : lines) {
@@ -178,7 +184,7 @@ private:
 				proxySettings.addToList(proxy);
 				++added;
 			}
-			if (added >= 15) {
+			if (added >= 3) {
 				break;
 			}
 		}
@@ -211,8 +217,8 @@ private:
 		}
 
 		++_failCount;
-		// If hanging for >= 2 ticks (approx 8 seconds), rotate / enable proxy
-		if (_failCount >= 2) {
+		// If hanging for >= 3 ticks (approx 15 seconds), rotate / enable proxy
+		if (_failCount >= 3) {
 			_failCount = 0;
 			activateNextAvailableProxy();
 		}
