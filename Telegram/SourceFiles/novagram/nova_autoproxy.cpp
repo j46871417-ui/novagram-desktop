@@ -151,6 +151,14 @@ private:
 
 	void parseAndMergeProxies(const QString &text) {
 		auto &proxySettings = Core::App().settings().proxy();
+		
+		// Optimization: If we already have enough proxies, don't bloat the list.
+		// Telegram constantly pings all proxies in the list in the background, 
+		// which causes severe CPU/Network lag if the list is too long.
+		if (proxySettings.list().size() >= 5) {
+			return;
+		}
+
 		auto lines = text.split('\n', Qt::SkipEmptyParts);
 		
 		for (int i = lines.size() - 1; i > 0; --i) {
